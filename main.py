@@ -4,11 +4,13 @@ import telebot
 from telebot import types
 import asyncio
 
-bot = telebot.TeleBot('')
-api_id = 0
-api_hash = 'str'
+print('Type bot token: ')
+bot = telebot.TeleBot(input())  # creates bot
 
-now = datetime.datetime.now()
+app_id = 0  # creates app_id variable
+hash_key = ''  # creates hash_key variable
+
+this_day = datetime.datetime.now()  # gets today's date
 chats = []
 words = []
 hours = 0
@@ -16,23 +18,24 @@ hours = 0
 
 @bot.message_handler(commands=['start'])
 def start(message):
-    bot.send_message(message.chat.id, 'Вот твоё меню!\n', parse_mode='html')
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    parse = types.KeyboardButton('Получить сообщения')
+    parse = types.KeyboardButton('Получить сообщения')  # creates six buttons for work with bot
     app = types.KeyboardButton('Установить APP_ID')
     key = types.KeyboardButton('Установить HASH_KEY')
     add_words = types.KeyboardButton('Добавить ключевые слова')
     time = types.KeyboardButton('Установить временной промежуток')
     add_groups = types.KeyboardButton('Добавить чаты')
     markup.add(parse, app, key, add_groups, add_words, time)
-    mess = f'Приветствую, <b> {message.from_user.first_name}, выберите действие: </b>'
+
+    mess = 'Ваши <b>кнопки</b> выведены ниже.'
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
 
 
 @bot.message_handler()
 def get_message(message):
-    markup = types.InlineKeyboardMarkup()
+    markup = types.InlineKeyboardMarkup()  # save to cash button with link to website
     markup.add(types.InlineKeyboardButton("Получить данные!", url="my.telegram.org"))
+
     if message.text == 'Получить сообщения':
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -60,53 +63,51 @@ def get_message(message):
         bot.register_next_step_handler(sent, set_time)
 
 
-def set_time(msg):
-    global hours
-    try:
-        hours = int(msg.text)
-        bot.send_message(msg.chat.id, 'Время установлено!\n', parse_mode='html')
-    except ValueError:
-        bot.send_message(msg.chat.id, 'Произошла ошибка!\n', parse_mode='html')
-
-
 def add_word(msg):
-    if msg.text != 'stop':
-        words.append(msg.text)
-        sent = bot.send_message(msg.chat.id, 'Укажите слово: ')
-        bot.register_next_step_handler(sent, add_word)
-    else:
-        bot.send_message(msg.chat.id, 'Ключевые слова записаны!\n', parse_mode='html')
+    add_to_list(msg, words, 'Слово', add_word)
 
 
 def add_chat(msg):
+    add_to_list(msg, chats, 'Чат', add_chat)
+
+
+def add_to_list(msg, lst, cls, func):
     if msg.text != 'stop':
-        chats.append(msg.text)
-        sent = bot.send_message(msg.chat.id, 'Укажите название чата: ')
-        bot.register_next_step_handler(sent, add_chat)
+        if msg.text not in lst:
+            lst.append(msg.text)
+        else:
+            bot.send_message(msg.chat.id, f"{cls} уже записан!")
+        sent = bot.send_message(msg.chat.id, f"Укажите {cls}:")
+        bot.register_next_step_handler(sent, func)
     else:
-        bot.send_message(msg.chat.id, 'Чаты записаны!\n', parse_mode='html')
+        bot.send_message(msg.chat.id, f'{cls} записан!\n', parse_mode='html')
 
 
 def set_key(msg):
-    global api_hash
-    try:
-        api_hash = msg.text
-        bot.send_message(msg.chat.id, 'HASH_KEY установлен!\n', parse_mode='html')
-    except ValueError:
-        bot.send_message(msg.chat.id, 'Произошла ошибка!\n', parse_mode='html')
+    global hash_key
+    hash_key = get_value(msg, 'HASH_KEY')
 
 
 def set_app(msg):
-    global api_id
+    global app_id
+    app_id = get_value(msg, 'APP_ID')
+
+
+def set_time(msg):
+    global hours
+    hours = int(get_value(msg, 'Время'))
+
+
+def get_value(msg, cls):
     try:
-        api_id = int(msg.text)
-        bot.send_message(msg.chat.id, 'APP_ID установлен!\n', parse_mode='html')
+        bot.send_message(msg.chat.id, f'{cls} установлен!\n', parse_mode='html')
+        return msg.text
     except ValueError:
         bot.send_message(msg.chat.id, 'Произошла ошибка!\n', parse_mode='html')
 
 
 def checkDate(date):
-    if date.day == now.day and date.hour - now.hour < hours and date.month == now.month:
+    if date.day == this_day.day and date.hour - this_day.hour < hours and date.month == this_day.month:
         return True
     else:
         return False
@@ -114,7 +115,7 @@ def checkDate(date):
 
 def Parse(chat):
     try:
-        with TelegramClient('client', api_id, api_hash) as client:
+        with TelegramClient('client', app_id, hash_key) as client:
             for dialog in client.iter_dialogs():
                 if dialog.title in chats:
                     for trigger in words:
