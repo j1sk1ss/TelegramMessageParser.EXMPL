@@ -6,12 +6,12 @@ import asyncio
 
 bot = telebot.TeleBot('')
 api_id = 0
-api_hash = ''
+api_hash = 'str'
 
 now = datetime.datetime.now()
 chats = []
 words = []
-hours = 1
+hours = 0
 
 
 @bot.message_handler(commands=['start'])
@@ -30,6 +30,12 @@ def get_message(message):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         Parse()
+    if message.text[0] == '-':
+        global api_id
+        api_id = int(message.text[1:])
+    if message.text[0] == '+':
+        global api_hash
+        api_hash = message.text[1:]
     if message.text[0] == '.':
         chats.append(message.text[1:])
         bot.send_message(message.chat.id, chats[-1])
@@ -37,6 +43,7 @@ def get_message(message):
         words.append(message.text[1:])
         bot.send_message(message.chat.id, words[-1])
     if message.text[0] == ';':
+        global hours
         try:
             hours = int(message.text[1:])
         except:
