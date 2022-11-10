@@ -1,18 +1,15 @@
-from telethon.sync import TelegramClient
 import datetime
 import telebot
 from telebot import types
-import asyncio
+
 import pickle
 import os
 
 print('Type bot token: ')
 bot = telebot.TeleBot(input())  # creates bot
 
-isActivated = False
-
-if os.path.isfile('filename.pickle'):
-    with open('filename.pickle', 'rb') as handle:
+if os.path.isfile('../filename.pickle'):
+    with open('../filename.pickle', 'rb') as handle:
         b = pickle.load(handle)
         app_id = int(b['id'])
         hash_key = b['hash']
@@ -45,10 +42,16 @@ def get_message(message):
     markup = types.InlineKeyboardMarkup()  # save to cash button with link to website
     markup.add(types.InlineKeyboardButton("Получить данные!", url="my.telegram.org"))
 
+    if message.text == 'SET':
+        input_dictionary = {'id': str(app_id), 'hash': str(hash_key), 'chats': chats, 'words': words}
+        with open('../filename.pickle', 'wb') as HANDLE:
+            pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
+
+    if message.text == 'GET':
+        bot.send_message(message.chat.id, f"❌{chats} чаты\n{words} слова\n{app_id} app_id\n{hash_key} hash_key❌")
+
     if message.text == '📩Получить сообщения📩':
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        Parse(message.chat.id)
+        os.system('python SCRIPTS\\Account_Parser.py')
 
     if message.text == '⏩Установить APP_ID⏪':
         sent = bot.send_message(message.chat.id, '🆔Укажите ID: \n🆔(Пример: 12345678)🆔', reply_markup=markup)
@@ -105,35 +108,6 @@ def get_value(msg, cls):
         return msg.text
     except ValueError:
         bot.send_message(msg.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
-
-
-def Parse(chat_id):
-    input_dictionary = {'id': str(app_id), 'hash': str(hash_key), 'chats': chats, 'words': words}
-    with open('filename.pickle', 'wb') as HANDLE:
-        pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
-
-    try:
-        with TelegramClient('client', app_id, hash_key) as user:
-            for dialog in user.iter_dialogs():
-                if dialog.title in chats:
-                    bot.send_message(chat_id, f'❗Обработка чата: {dialog.title}!❗', parse_mode='html')
-                    for msg in user.iter_messages(dialog.id):
-                        for word in words:
-                            if word in msg.text:
-                                if msg.text is not None and this_day.hour - 5 == msg.date.hour \
-                                        and this_day.day == msg.date.day:
-                                    user.forward_messages(5511006797, msg.id, dialog.id)
-                                else:
-                                    break
-                        else:
-                            continue
-                        break
-                    else:
-                        continue
-                    break
-        bot.send_message(chat_id, '❗Сообщения закончились!❗', parse_mode='html')
-    except ValueError:
-        bot.send_message(chat_id, '❌Произошла ошибка!❌', parse_mode='html')
 
 
 bot.polling(none_stop=True)
