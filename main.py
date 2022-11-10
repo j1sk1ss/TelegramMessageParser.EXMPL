@@ -3,14 +3,22 @@ import datetime
 import telebot
 from telebot import types
 import asyncio
+import pickle
+import os
 
 print('Type bot token: ')
 bot = telebot.TeleBot(input())  # creates bot
 
-app_id = 0  # creates app_id variable
-hash_key = ''  # creates hash_key variable
+isActivated = False
+
+if os.path.isfile('filename.pickle'):
+    with open('filename.pickle', 'rb') as handle:
+        b = pickle.load(handle)
+        app_id = int(b['id'])
+        hash_key = b['hash']
 
 this_day = datetime.datetime.now()  # gets today's date
+print(this_day)
 chats = []
 words = []
 hours = 0
@@ -23,9 +31,8 @@ def start(message):
     app = types.KeyboardButton('⏩Установить APP_ID⏪')
     key = types.KeyboardButton('⏩Установить HASH_KEY⏪')
     add_words = types.KeyboardButton('🔑Добавить ключевые слова🔑')
-    time = types.KeyboardButton('⏳Установить временной промежуток⏳')
     add_groups = types.KeyboardButton('📧Добавить чаты📧')
-    markup.add(parse, app, key, add_groups, add_words, time)
+    markup.add(parse, app, key, add_groups, add_words)
 
     mess = '⏬<b>КНОПКИ</b>⏬'
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
@@ -39,7 +46,7 @@ def get_message(message):
     if message.text == '📩Получить сообщения📩':
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        Parse(message)
+        Parse()
 
     if message.text == '⏩Установить APP_ID⏪':
         sent = bot.send_message(message.chat.id, '🆔Укажите ID: \n🆔(Пример: 12345678)🆔', reply_markup=markup)
@@ -57,10 +64,6 @@ def get_message(message):
     if message.text == '🔑Добавить ключевые слова🔑':
         sent = bot.send_message(message.chat.id, '📩Укажите слово: ')
         bot.register_next_step_handler(sent, add_word)
-
-    if message.text == '⏳Установить временной промежуток⏳':
-        sent = bot.send_message(message.chat.id, '⏰Укажите количество часов: ')
-        bot.register_next_step_handler(sent, set_time)
 
 
 def add_word(msg):
@@ -93,9 +96,9 @@ def set_app(msg):
     app_id = get_value(msg, 'APP_ID')
 
 
-def set_time(msg):
-    global hours
-    hours = int(get_value(msg, 'Время'))
+#  input_dictionary = {'id': str(app_id), 'hash': str(hash_key)}
+#  with open('filename.pickle', 'wb') as HANDLE:
+#      pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def get_value(msg, cls):
@@ -106,24 +109,22 @@ def get_value(msg, cls):
         bot.send_message(msg.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
 
 
-def checkDate(date):
-    if date.day == this_day.day and date.hour - this_day.hour < hours and date.month == this_day.month:
-        return True
-    else:
-        return False
-
-
-def Parse(chat):
-    try:
-        with TelegramClient('client', app_id, hash_key) as client:
-            for dialog in client.iter_dialogs():
-                if dialog.title in chats:
-                    for trigger in words:
-                        for msg in client.iter_messages(dialog.id, search=str(trigger)):
-                            if msg.text is not None and checkDate(msg.date):
-                                client.forward_messages(chat.id, msg.id, dialog.id)
-    except ValueError:
-        bot.send_message(chat.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
+def Parse():
+    with TelegramClient(f'client', app_id, hash_key) as client:
+        for dialog in client.iter_dialogs():
+            if dialog.title in chats:
+                for msg in client.iter_messages(dialog.id):
+                    for word in words:
+                        if word in msg.text:
+                            if msg.text is not None and this_day.hour - 5 == msg.date.hour \
+                                    and this_day.day == msg.date.day:
+                                client.forward_messages(5511006797, msg.id, dialog.id)
+                            else:
+                                break
+                    else:
+                        continue
+                else:
+                    continue
 
 
 bot.polling(none_stop=True)
