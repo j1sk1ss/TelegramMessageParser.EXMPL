@@ -16,12 +16,13 @@ if os.path.isfile('filename.pickle'):
         b = pickle.load(handle)
         app_id = int(b['id'])
         hash_key = b['hash']
+        chats = b['chats']
+        words = b['words']
+else:
+    chats = []
+    words = []
 
 this_day = datetime.datetime.now()  # gets today's date
-print(this_day)
-chats = []
-words = []
-hours = 0
 
 
 @bot.message_handler(commands=['старт'])
@@ -54,7 +55,8 @@ def get_message(message):
 
     if message.text == '⏩Установить HASH_KEY⏪':
         sent = bot.send_message(message.chat.id, '🔑Укажите HASH_KEY: \n🔑(Пример '
-                                                 '1234567890:XXXXXXXX0xXXXXXXxXXXX0XXxxXxXXx0xXX)🔑',  reply_markup=markup)
+                                                 '1234567890:XXXXXXXX0xXXXXXXxXXXX0XXxxXxXXx0xXX)🔑',
+                                reply_markup=markup)
         bot.register_next_step_handler(sent, set_key)
 
     if message.text == '📧Добавить чаты📧':
@@ -80,6 +82,7 @@ def add_to_list(msg, lst, cls, func):
             lst.append(msg.text)
         else:
             bot.send_message(msg.chat.id, f"❌{cls} уже записан!❌")
+
         sent = bot.send_message(msg.chat.id, f"📃Укажите {cls}:")
         bot.register_next_step_handler(sent, func)
     else:
@@ -96,11 +99,6 @@ def set_app(msg):
     app_id = get_value(msg, 'APP_ID')
 
 
-#  input_dictionary = {'id': str(app_id), 'hash': str(hash_key)}
-#  with open('filename.pickle', 'wb') as HANDLE:
-#      pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
-
-
 def get_value(msg, cls):
     try:
         bot.send_message(msg.chat.id, f'✅{cls} установлен!✅', parse_mode='html')
@@ -110,21 +108,28 @@ def get_value(msg, cls):
 
 
 def Parse():
-    with TelegramClient(f'client', app_id, hash_key) as client:
-        for dialog in client.iter_dialogs():
-            if dialog.title in chats:
-                for msg in client.iter_messages(dialog.id):
-                    for word in words:
-                        if word in msg.text and msg.unread:
-                            if msg.text is not None and this_day.hour - 5 == msg.date.hour \
-                                    and this_day.day == msg.date.day:
-                                client.forward_messages(5511006797, msg.id, dialog.id)
-                            else:
-                                break
+    input_dictionary = {'id': str(app_id), 'hash': str(hash_key), 'chats': chats, 'words': words}
+    with open('filename.pickle', 'wb') as HANDLE:
+        pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
+
+    try:
+        with TelegramClient('client', app_id, hash_key) as client:
+            for dialog in client.iter_dialogs():
+                if dialog.title in chats:
+                    for msg in client.iter_messages(dialog.id):
+                        for word in words:
+                            if word in msg.text:
+                                if msg.text is not None and this_day.hour - 5 == msg.date.hour \
+                                        and this_day.day == msg.date.day:
+                                    client.forward_messages(5511006797, msg.id, dialog.id)
+                                else:
+                                    break
+                        else:
+                            continue
                     else:
                         continue
-                else:
-                    continue
+    except ValueError:
+        bot.send_message(msg.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
 
 
 bot.polling(none_stop=True)
