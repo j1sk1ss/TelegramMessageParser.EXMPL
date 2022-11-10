@@ -33,7 +33,8 @@ def start(message):
     key = types.KeyboardButton('⏩Установить HASH_KEY⏪')
     add_words = types.KeyboardButton('🔑Добавить ключевые слова🔑')
     add_groups = types.KeyboardButton('📧Добавить чаты📧')
-    markup.add(parse, app, key, add_groups, add_words)
+    stop = types.KeyboardButton('🚩стоп🚩')
+    markup.add(parse, app, key, add_groups, add_words, stop)
 
     mess = '⏬<b>КНОПКИ</b>⏬'
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup=markup)
@@ -47,7 +48,7 @@ def get_message(message):
     if message.text == '📩Получить сообщения📩':
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        Parse()
+        Parse(message.chat.id)
 
     if message.text == '⏩Установить APP_ID⏪':
         sent = bot.send_message(message.chat.id, '🆔Укажите ID: \n🆔(Пример: 12345678)🆔', reply_markup=markup)
@@ -55,8 +56,7 @@ def get_message(message):
 
     if message.text == '⏩Установить HASH_KEY⏪':
         sent = bot.send_message(message.chat.id, '🔑Укажите HASH_KEY: \n🔑(Пример '
-                                                 '1234567890:XXXXXXXX0xXXXXXXxXXXX0XXxxXxXXx0xXX)🔑',
-                                reply_markup=markup)
+                                                 '5f021969a9e8cfxx59cc94axa11aab7e)🔑', reply_markup=markup)
         bot.register_next_step_handler(sent, set_key)
 
     if message.text == '📧Добавить чаты📧':
@@ -77,7 +77,7 @@ def add_chat(msg):
 
 
 def add_to_list(msg, lst, cls, func):
-    if msg.text != 'stop':
+    if msg.text != '🚩стоп🚩':
         if msg.text not in lst:
             lst.append(msg.text)
         else:
@@ -107,29 +107,33 @@ def get_value(msg, cls):
         bot.send_message(msg.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
 
 
-def Parse():
+def Parse(chat_id):
     input_dictionary = {'id': str(app_id), 'hash': str(hash_key), 'chats': chats, 'words': words}
     with open('filename.pickle', 'wb') as HANDLE:
         pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
 
     try:
-        with TelegramClient('client', app_id, hash_key) as client:
-            for dialog in client.iter_dialogs():
+        with TelegramClient('client', app_id, hash_key) as user:
+            for dialog in user.iter_dialogs():
                 if dialog.title in chats:
-                    for msg in client.iter_messages(dialog.id):
+                    bot.send_message(chat_id, f'❗Обработка чата: {dialog.title}!❗', parse_mode='html')
+                    for msg in user.iter_messages(dialog.id):
                         for word in words:
                             if word in msg.text:
                                 if msg.text is not None and this_day.hour - 5 == msg.date.hour \
                                         and this_day.day == msg.date.day:
-                                    client.forward_messages(5511006797, msg.id, dialog.id)
+                                    user.forward_messages(5511006797, msg.id, dialog.id)
                                 else:
                                     break
                         else:
                             continue
+                        break
                     else:
                         continue
+                    break
+        bot.send_message(chat_id, '❗Сообщения закончились!❗', parse_mode='html')
     except ValueError:
-        bot.send_message(msg.chat.id, '❌Произошла ошибка!❌', parse_mode='html')
+        bot.send_message(chat_id, '❌Произошла ошибка!❌', parse_mode='html')
 
 
 bot.polling(none_stop=True)
