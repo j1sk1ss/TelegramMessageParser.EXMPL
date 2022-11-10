@@ -115,7 +115,7 @@ def Parse():
             if dialog.title in chats:
                 for msg in client.iter_messages(dialog.id):
                     for word in words:
-                        if word in msg.text:
+                        if word in msg.text and msg.unread:
                             if msg.text is not None and this_day.hour - 5 == msg.date.hour \
                                     and this_day.day == msg.date.day:
                                 client.forward_messages(5511006797, msg.id, dialog.id)
