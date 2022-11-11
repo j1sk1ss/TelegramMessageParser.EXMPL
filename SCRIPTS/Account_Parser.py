@@ -18,20 +18,13 @@ else:
 
 this_day = datetime.datetime.now()
 
-client = TelegramClient('client', app_id, hash_key)
-client.start()
-
-
-@client.on(events.NewMessage())
-async def main(event):
-    try:
+with TelegramClient('client', app_id, hash_key) as client:
+    @client.on(events.NewMessage(incoming=True))
+    async def main(event):
         print(event.message.id, event.chat.title, event.message.text)
         if event.chat.title in chats:
             for word in words:
                 if word in event.message.text:
                     await client.forward_messages(5511006797, event.message.id, event.chat.id)
                 break
-    except ValueError:
-        print('ERROR is CORRUPTED!')
-with client:
     client.run_until_disconnected()

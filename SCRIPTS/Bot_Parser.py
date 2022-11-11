@@ -51,7 +51,7 @@ def get_message(message):
         bot.send_message(message.chat.id, f"❌{chats} чаты\n{words} слова\n{app_id} app_id\n{hash_key} hash_key❌")
 
     if message.text == '📩Получить сообщения📩':
-        os.system('python SCRIPTS\\Account_Parser.py')
+        os.system('python Account_Parser.py')
 
     if message.text == '⏩Установить APP_ID⏪':
         sent = bot.send_message(message.chat.id, '🆔Укажите ID: \n🆔(Пример: 12345678)🆔', reply_markup=markup)
