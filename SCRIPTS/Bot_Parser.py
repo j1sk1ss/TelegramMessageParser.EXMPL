@@ -48,7 +48,7 @@ def get_message(message):
             pickle.dump(input_dictionary, HANDLE, protocol=pickle.HIGHEST_PROTOCOL)
 
     if message.text == 'GET':
-        bot.send_message(message.chat.id, f"❌{chats} chats\n{words} words\n{app_id} app_id\n{hash_key} hash_key❌")
+        bot.send_message(message.chat.id, f"{chats} chats\n{words} words\n{app_id} app_id\n{hash_key} hash_key")
 
     if message.text == 'Get messages':
         os.system('python SCRIPTS\\Account_Parser.py')
